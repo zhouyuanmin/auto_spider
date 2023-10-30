@@ -48,3 +48,10 @@ class GSAGood(BaseModel):
     gsa_price_1 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="GSA优势价格1")
     gsa_price_2 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="GSA优势价格2")
     gsa_price_3 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="GSA优势价格3")
+
+
+class IngramGood(BaseModel):
+    vpn = models.CharField(max_length=255, default="", verbose_name="VPN")  # 等价于part_number
+    sku = models.CharField(max_length=255, default="", verbose_name="SKU")
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="price")  # 价格 无效则是Not Available
+    status = models.BooleanField(null=True, default=None, verbose_name="状态")  # True产品存在、False产品不存在、None未爬
