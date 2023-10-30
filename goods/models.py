@@ -5,6 +5,7 @@ from django.utils import timezone
 class BaseModel(models.Model):
     """自定义Model基类:补充基础字段"""
 
+    part_number = models.CharField(primary_key=True, max_length=255, verbose_name="产品编号")
     create_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     update_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
     delete_at = models.DateTimeField(null=True, default=None, verbose_name="删除时间")
