@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "rest_framework",  # 注册DRF
     "django_filters",  # 过滤器
     "import_export",  # 管理端数据导出服务
+    "goods",
 ]
 
 MIDDLEWARE = [
@@ -84,7 +85,7 @@ DATABASES = {
         "PORT": int(os.getenv("DB_PORT", 3306)),  # 数据库端口
         "USER": os.getenv("DB_USER", "root"),  # 数据库用户名
         "PASSWORD": os.getenv("DB_PASSWORD", "root123456"),  # 数据库用户密码
-        "NAME": os.getenv("DB_NAME", "spider"),  # 数据库名字
+        "NAME": os.getenv("DB_NAME", "auto_spider"),  # 数据库名字
         "OPTIONS": {"charset": "utf8mb4"},
     },
     "mysql_cloud": {
@@ -93,7 +94,7 @@ DATABASES = {
         "PORT": int(os.getenv("DB_PORT", 10001)),  # 数据库端口
         "USER": os.getenv("DB_USER", "root"),  # 数据库用户名
         "PASSWORD": os.getenv("DB_PASSWORD", "root123456"),  # 数据库用户密码
-        "NAME": os.getenv("DB_NAME", "spider"),  # 数据库名字
+        "NAME": os.getenv("DB_NAME", "auto_spider"),  # 数据库名字
         "OPTIONS": {"charset": "utf8mb4"},
     },
     "sqlite": {
