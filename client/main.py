@@ -243,8 +243,10 @@ def get_part_numbers(path=part_number_file, distinct=False):
 
 
 def refresh_synnex_good(part_number, browser):
-    # TODO:
-    pass
+    """
+    TODO: 刷新 synnex_good
+    爬过 不管是否有数据 都会刷新refresh_at
+    """
 
 
 def refresh_synnex_goods(part_numbers) -> bool:
@@ -268,5 +270,38 @@ def refresh_synnex_goods(part_numbers) -> bool:
     browser = login_synnex()
     for part_number in part_numbers:
         refresh_synnex_good(part_number, browser)
+
+    return False
+
+
+def refresh_gsa_good(part_number, browser):
+    """
+    TODO: 刷新 gsa_good
+    爬过 不管是否有数据 都会刷新refresh_at
+    爬过 无数据则新增一个空obj
+    爬过 有数据则会删除就数据 插入新数据
+    """
+
+
+def refresh_gsa_goods(part_numbers, index=0) -> bool:
+    """
+    return: bool True表示所有数据都有效、False还有数据需要更新
+    """
+    # 找出待爬取的part_numbers
+    now_time = datetime.datetime.now()
+    effective_time = now_time - datetime.timedelta(days=7)
+    exist_part_numbers = models.GSAGood.objects.filter(
+        refresh_at__gt=effective_time  # 在有效期内
+    ).values_list("part_number", flat=True)
+    part_numbers = set(part_numbers) - set(exist_part_numbers)
+    part_numbers = list(part_numbers)
+
+    if not part_numbers:
+        return True
+
+    # 开始爬取part_numbers
+    browser = create_browser(index)
+    for part_number in part_numbers:
+        refresh_gsa_good(part_number, browser)
 
     return False
