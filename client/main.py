@@ -39,6 +39,9 @@ synnex_username = "lwang@techfocusUSA.com"
 synnex_password = "/4WM9ZAtB6c8ph6"
 ingram_username = "lwang@techfocususa.com"
 ingram_password = "3851330mM&"
+
+# 业务配置
+part_number_file = "part_number_file.txt"
 gsa_source_level = 1  # gsa网站source最低值
 
 # 页面节点
@@ -219,3 +222,20 @@ def login_ingram():
         return browser
     else:
         return browser
+
+
+def get_part_numbers(path=part_number_file, distinct=False):
+    """
+    获取part_numbers
+    path: txt文件 默认part_number_file文件
+    distinct: False 默认不去重
+    """
+    part_numbers = []
+    with open(path, "r") as f:
+        for line in f.readlines():
+            line = line.strip()
+            if line:  # 不要空字符
+                part_numbers.append(line)
+    if distinct:
+        part_numbers = list(set(part_numbers))
+    return part_numbers
