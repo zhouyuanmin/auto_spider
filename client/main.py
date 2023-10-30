@@ -42,6 +42,7 @@ ingram_password = "3851330mM&"
 
 # 业务配置
 part_number_file = "part_number_file.txt"
+effective_days = 7  # 刷新有效时间
 gsa_source_level = 1  # gsa网站source最低值
 
 # 页面节点
@@ -239,3 +240,33 @@ def get_part_numbers(path=part_number_file, distinct=False):
     if distinct:
         part_numbers = list(set(part_numbers))
     return part_numbers
+
+
+def refresh_synnex_good(part_number, browser):
+    # TODO:
+    pass
+
+
+def refresh_synnex_goods(part_numbers) -> bool:
+    """
+    return: bool True表示所有数据都有效、False还有数据需要更新
+    """
+    # 找出待爬取的part_numbers
+    now_time = datetime.datetime.now()
+    effective_time = now_time - datetime.timedelta(days=7)
+    exist_part_numbers = models.SynnexGood.objects.filter(
+        refresh_at__gt=effective_time,  # 在有效期内
+        status__isnull=False,  # 需要爬取过
+    ).values_list("part_number", flat=True)
+    part_numbers = set(part_numbers) - set(exist_part_numbers)
+    part_numbers = list(part_numbers)
+
+    if not part_numbers:
+        return True
+
+    # 开始爬取part_numbers
+    browser = login_synnex()
+    for part_number in part_numbers:
+        refresh_synnex_good(part_number, browser)
+
+    return False
