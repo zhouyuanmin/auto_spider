@@ -269,7 +269,17 @@ def refresh_synnex_goods(part_numbers) -> bool:
     # 开始爬取part_numbers
     browser = login_synnex()
     for part_number in part_numbers:
-        refresh_synnex_good(part_number, browser)
+        try:
+            refresh_synnex_good(part_number, browser)
+        except Exception as e:
+            logging.error(e)
+            error_file = StringIO()
+            traceback.print_exc(file=error_file)
+            details = error_file.getvalue()
+            file_name = f"{part_number}_{int(time.time())}"
+            with open(f"{file_name}.txt", "w") as f:
+                f.write(details)
+            save_error_screenshot(browser, "synnex", part_number)
 
     return False
 
@@ -302,7 +312,17 @@ def refresh_gsa_goods(part_numbers, index=0) -> bool:
     # 开始爬取part_numbers
     browser = create_browser(index)
     for part_number in part_numbers:
-        refresh_gsa_good(part_number, browser)
+        try:
+            refresh_gsa_good(part_number, browser)
+        except Exception as e:
+            logging.error(e)
+            error_file = StringIO()
+            traceback.print_exc(file=error_file)
+            details = error_file.getvalue()
+            file_name = f"{part_number}_{int(time.time())}"
+            with open(f"{file_name}.txt", "w") as f:
+                f.write(details)
+            save_error_screenshot(browser, "gsa", part_number)
 
     return False
 
@@ -334,6 +354,27 @@ def refresh_ingram_goods(part_numbers) -> bool:
     # 开始爬取part_numbers
     browser = login_ingram()
     for part_number in part_numbers:
-        refresh_ingram_good(part_number, browser)
+        try:
+            refresh_ingram_good(part_number, browser)
+        except Exception as e:
+            logging.error(e)
+            error_file = StringIO()
+            traceback.print_exc(file=error_file)
+            details = error_file.getvalue()
+            file_name = f"{part_number}_{int(time.time())}"
+            with open(f"{file_name}.txt", "w") as f:
+                f.write(details)
+            save_error_screenshot(browser, "ingram", part_number)
 
     return False
+
+
+def spider():
+    """爬虫总开关"""
+    file = part_number_file  # 可以直接修改
+    part_numbers = get_part_numbers(file, distinct=True)
+    status = True
+    status = refresh_synnex_goods(part_numbers) and status  # 不使用可以直接注释掉
+    status = refresh_gsa_goods(part_numbers) and status  # 不使用可以直接注释掉
+    status = refresh_ingram_goods(part_numbers) and status  # 不使用可以直接注释掉
+    logging.info(f"{status}")
