@@ -305,3 +305,35 @@ def refresh_gsa_goods(part_numbers, index=0) -> bool:
         refresh_gsa_good(part_number, browser)
 
     return False
+
+
+def refresh_ingram_good(part_number, browser):
+    """
+    TODO: 刷新 ingram_good
+    爬过 不管是否有数据 都会刷新refresh_at
+    """
+
+
+def refresh_ingram_goods(part_numbers) -> bool:
+    """
+    return: bool True表示所有数据都有效、False还有数据需要更新
+    """
+    # 找出待爬取的part_numbers
+    now_time = datetime.datetime.now()
+    effective_time = now_time - datetime.timedelta(days=7)
+    exist_part_numbers = models.IngramGood.objects.filter(
+        refresh_at__gt=effective_time,  # 在有效期内
+        status__isnull=False,  # 需要爬取过
+    ).values_list("part_number", flat=True)
+    part_numbers = set(part_numbers) - set(exist_part_numbers)
+    part_numbers = list(part_numbers)
+
+    if not part_numbers:
+        return True
+
+    # 开始爬取part_numbers
+    browser = login_ingram()
+    for part_number in part_numbers:
+        refresh_ingram_good(part_number, browser)
+
+    return False
