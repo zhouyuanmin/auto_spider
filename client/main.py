@@ -39,6 +39,9 @@ synnex_username = "lwang@techfocusUSA.com"
 synnex_password = "/4WM9ZAtB6c8ph6"
 ingram_username = "lwang@techfocususa.com"
 ingram_password = "3851330mM&"
+synnex_part_number_file = "synnex_part_number_file.txt"
+gsa_part_number_file = "gsa_part_number_file.txt"
+ingram_part_number_file = "ingram_part_number_file.txt"
 
 # 业务配置
 part_number_file = "part_number_file.txt"
@@ -61,6 +64,8 @@ page_elements = {
     "msrp": '//*[@class="msrp"]/span',
     "price_info": '//*[@class="price-info"]/a',
     "mfr_part_no": '//*[@id="searchResultTbody"]//tbody/tr[1]/td[1]/span',
+    # "sku": '//*[@id="searchResultTbody"]/tr[1]/td[3]/table/tbody/tr[1]/td[2]',
+    "mfr": '//*[@id="searchResultTbody"]//div[@class="company-name"]',
     "search": '//*[@id="globalSearch"]',
     "product_list": '//*[@class="productListControl isList"]/app-ux-product-display-inline',
     "sources": './/span[@align="left"]',
@@ -159,6 +164,16 @@ def save_error_screenshot(browser, sign, detail):
 
 
 # 业务基础函数
+def text2dollar(text, sign=True):
+    if sign and "$" not in text:  # 开启标志验证 则需要有$符号
+        logging.error(text)
+        raise ValueError(f"text={text}")
+    # 提取价格
+    text = text.replace(",", "")  # 处理逗号
+    dollar = float(text.strip("$"))
+    return dollar
+
+
 def login_synnex():
     global synnex_username
     global synnex_password
@@ -244,9 +259,79 @@ def get_part_numbers(path=part_number_file, distinct=False):
 
 def refresh_synnex_good(part_number, browser):
     """
-    TODO: 刷新 synnex_good
+    刷新 synnex_good
     爬过 不管是否有数据 都会刷新refresh_at
     """
+    url = f"https://ec.synnex.com/ecx/part/searchResult.html?begin=0&offset=20&keyword={part_number}&sortField=reference_price&spaType=FG"
+    browser.get(url)
+    waiting_to_load(browser)
+
+    # 最低价产品(已排序 取第一个)
+    product_items = browser.find_elements_by_xpath(page_elements.get("product_items"))
+    if product_items:
+        msrp_divs = browser.find_elements_by_xpath(page_elements.get("msrp"))
+        if not msrp_divs:
+            time.sleep(3)
+            msrp_divs = browser.find_elements_by_xpath(page_elements.get("msrp"))
+        if msrp_divs:
+            msrp = text2dollar(msrp_divs[0].text, True)
+        else:
+            raise ValueError(f"msrp值不存在 part_number={part_number}")
+
+        federal_govt_price_divs = browser.find_elements_by_xpath(
+            page_elements.get("price_info")
+        )
+        if not federal_govt_price_divs:
+            time.sleep(3)
+            federal_govt_price_divs = browser.find_elements_by_xpath(
+                page_elements.get("price_info")
+            )
+        if federal_govt_price_divs:
+            federal_govt_price = text2dollar(federal_govt_price_divs[0].text, True)
+        else:
+            raise ValueError(f"federal_govt_price值不存在 part_number={part_number}")
+
+        mfr_p_n_divs = browser.find_elements_by_xpath(page_elements.get("mfr_part_no"))
+        if mfr_p_n_divs:
+            mfr_p_n = mfr_p_n_divs[0].text
+        else:
+            raise ValueError(f"mfr_p_n值不存在 part_number={part_number}")
+
+        mfr_divs = browser.find_elements_by_xpath(page_elements.get("mfr"))
+        if mfr_divs:
+            mfr = mfr_divs[0].text
+        else:
+            raise ValueError(f"mfr值不存在 part_number={part_number}")
+
+        # 刷新obj
+        obj, _ = models.SynnexGood.objects.get_or_create(part_number=part_number)
+        obj.mfr = mfr
+        obj.msrp = msrp
+        obj.federal_govt_price = federal_govt_price
+        obj.status = True
+        obj.refresh_at = datetime.datetime.now()
+        obj.save()
+    else:
+        # 无产品
+        tbody = browser.find_elements_by_xpath(page_elements.get("tbody"))
+        if tbody:  # 页面正常
+            text = tbody[0].text
+            if "Your search found no result." in text:
+                # 创建一个空的obj
+                obj, _ = models.SynnexGood.objects.get_or_create(
+                    part_number=part_number
+                )
+                obj.status = False
+                obj.refresh_at = datetime.datetime.now()
+                obj.save()
+            else:  # 其他情况
+                global synnex_part_number_file
+                with open(synnex_part_number_file, "a+") as f:
+                    f.write(f"{part_number}\n")
+        else:  # 页面异常
+            global synnex_part_number_file
+            with open(synnex_part_number_file, "a+") as f:
+                f.write(f"{part_number}\n")
 
 
 def refresh_synnex_goods(part_numbers) -> bool:
@@ -280,6 +365,10 @@ def refresh_synnex_goods(part_numbers) -> bool:
             with open(f"{file_name}.txt", "w") as f:
                 f.write(details)
             save_error_screenshot(browser, "synnex", part_number)
+
+            global synnex_part_number_file
+            with open(synnex_part_number_file, "a+") as f:
+                f.write(f"{part_number}\n")
 
     return False
 

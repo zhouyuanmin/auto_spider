@@ -27,8 +27,8 @@ class BaseModel(models.Model):
 class SynnexGood(BaseModel):
     mfr = models.CharField(max_length=255, default="", verbose_name="Mfr")  # 厂家名称
     mfr_p_n = models.CharField(max_length=255, default="", verbose_name="Mfr.P/N")  # 产品编号 等价于part_number
-    sku = models.CharField(max_length=255, default="", verbose_name="SKU")
-    td_snx = models.CharField(max_length=255, default="", verbose_name="TD SNX#")
+    sku = models.CharField(max_length=255, default="", verbose_name="SKU")  # 暂无
+    td_snx = models.CharField(max_length=255, default="", verbose_name="TD SNX#")  # 暂无
     msrp = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="MSRP")  # 建议零售价
     federal_govt_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="联邦政府价格")
     status = models.BooleanField(null=True, default=None, verbose_name="状态")  # True产品存在、False产品不存在、None未爬
@@ -52,6 +52,6 @@ class GSAGood(BaseModel):
 
 class IngramGood(BaseModel):
     vpn = models.CharField(max_length=255, default="", verbose_name="VPN")  # 等价于part_number
-    sku = models.CharField(max_length=255, default="", verbose_name="SKU")
+    sku = models.CharField(max_length=255, default="", verbose_name="SKU")  # 暂无
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="price")  # 价格 无效则是Not Available
     status = models.BooleanField(null=True, default=None, verbose_name="状态")  # True产品存在、False产品不存在、None未爬
