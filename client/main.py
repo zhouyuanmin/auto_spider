@@ -283,6 +283,8 @@ def refresh_synnex_good(part_number, browser):
     if not search_divs:  # 页面未加载完成
         raise ValueError(f"页面未加载完成 part_number={part_number}")
 
+    time.sleep(2)  # 降低爬取速度
+
     # 最低价产品(已排序 取第一个)
     product_items = browser.find_elements_by_xpath(page_elements.get("product_items"))
     if product_items:
@@ -333,16 +335,18 @@ def refresh_synnex_good(part_number, browser):
         tbody = browser.find_elements_by_xpath(page_elements.get("tbody"))
         if tbody:  # 页面正常
             text = tbody[0].text
-            if "Your search found no result." in text or "in this page is excluded" in text:
-                # 创建一个空的obj
-                obj, _ = models.SynnexGood.objects.get_or_create(
-                    part_number=part_number
-                )
-                obj.status = False
-                obj.refresh_at = datetime.datetime.now()
-                obj.save()
+            if "Your search found no result." in text:
+                pass
+            elif "in this page is excluded" in text:
+                pass
             else:  # 其他情况
                 raise ValueError(f"未知情况 part_number={part_number}")
+
+            # 创建一个空的obj
+            obj, _ = models.SynnexGood.objects.get_or_create(part_number=part_number)
+            obj.status = False
+            obj.refresh_at = datetime.datetime.now()
+            obj.save()
         else:  # 页面异常
             raise ValueError(f"未知情况 part_number={part_number}")
 
