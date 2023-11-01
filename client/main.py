@@ -274,6 +274,7 @@ def get_part_numbers(path=part_number_file, distinct=False):
     part_numbers = []
     with open(path, "r") as f:
         for line in f.readlines():
+            line = line.replace(" ", "")  # 去掉部分中间有空格的
             line = line.strip()
             if line:  # 不要空字符
                 part_numbers.append(line)
