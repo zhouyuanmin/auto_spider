@@ -95,6 +95,7 @@ page_elements = {
     "vpn_divs": '//*[@id="main-view"]//span[contains(text(),"VPN:")]/following-sibling::span[1]',
     "no_results": '//*[@id="search-container"]//h1[contains(text(),"Sorry, no results found!")]',
     "own_price": '//*[@id="main-view"]//div[@class="ownPrice no-print css-lqai7o"]',
+    "lw": '//*[@id="root"]/div/div[1]/div/div[3]/button[5]/div/span',
 }
 
 
@@ -688,6 +689,11 @@ def refresh_ingram_goods(part_numbers) -> bool:
     browser = login_ingram()
     for part_number in part_numbers:
         try:
+            # 判断是否登陆了
+            login_buttons = browser.find_elements_by_xpath(page_elements.get("lw"))
+            if login_buttons[0].text != "LW":  # 未登陆
+                browser.quit()
+                browser = login_ingram()
             refresh_ingram_good(part_number, browser)
         except Exception as e:
             logging.error(e)
