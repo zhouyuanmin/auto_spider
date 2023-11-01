@@ -97,6 +97,7 @@ page_elements = {
     "no_results": '//*[@id="search-container"]//h1[contains(text(),"Sorry, no results found!")]',
     "own_price": '//*[@id="main-view"]//div[@class="ownPrice no-print css-lqai7o"]',
     "lw": '//*[@id="root"]/div/div[1]/div/div[3]/button[5]/div/span',
+    "product_link": '//a[@data-name="productsearch_product_link"]',
 }
 
 
@@ -273,7 +274,7 @@ def login_ingram():
         login_button = browser.find_element_by_xpath(page_elements.get("ingram_button"))
         login_button.click()
         waiting_to_load(browser)
-        time.sleep(3)  # 登陆后 等待页面跳转
+        time.sleep(10)  # 登陆后 等待页面跳转
         return browser
     else:
         return browser
@@ -643,9 +644,8 @@ def refresh_ingram_good(part_number, browser):
 
     url = f"https://usa.ingrammicro.com/cep/app/product/productsearch?displaytitle={part_number}&keywords={part_number}&sortBy=relevance&page=1&rowsPerPage=8"
     browser.get(url)
+    time.sleep(5)  # 降低爬取速度
     waiting_to_load(browser)
-
-    time.sleep(2)  # 降低爬取速度
 
     main_view_divs = browser.find_elements_by_xpath(page_elements.get("main_view"))
     for i in range(3):  # 网很慢 刷新三次 还是无网页就算了
@@ -667,6 +667,14 @@ def refresh_ingram_good(part_number, browser):
         obj.status = False
         obj.refresh_at = datetime.datetime.now()
         obj.save()
+        return None
+
+    # 如果是列表页 则点击第一个进入详情页
+    product_links = browser.find_elements_by_xpath(page_elements.get("product_link"))
+    if product_links:
+        product_links[0].click()
+        time.sleep(3)
+        waiting_to_load(browser)
 
     # 有产品
     vpn_divs = browser.find_elements_by_xpath(page_elements.get("vpn_divs"))
