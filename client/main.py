@@ -84,6 +84,9 @@ page_elements = {
     "main_view": '//*[@id="main-view"]/div/div[1]/div/div[1]',
     "mas_sin": '//*[@id="main"]//strong[contains(text(),"MAS Schedule/SIN")]/../following-sibling::div[1]',
     "coo_divs": '//*[@id="main"]//strong[contains(text(),"Country of Origin")]/../following-sibling::div[1]',
+    "vpn_divs": '//*[@id="main-view"]//span[contains(text(),"VPN:")]/following-sibling::span[1]',
+    "no_results": '//*[@id="search-container"]//h1[contains(text(),"Sorry, no results found!")]',
+    "own_price": '//*[@id="main-view"]//div[@class="ownPrice no-print css-lqai7o"]',
 }
 
 
@@ -578,9 +581,62 @@ def refresh_gsa_goods(part_numbers, index=0) -> bool:
 
 def refresh_ingram_good(part_number, browser):
     """
-    TODO: 刷新 ingram_good
+    刷新 ingram_good
     爬过 不管是否有数据 都会刷新refresh_at
     """
+    logging.info(f"刷新 ingram_good {part_number}")
+
+    url = f"https://usa.ingrammicro.com/cep/app/product/productsearch?displaytitle={part_number}&keywords={part_number}&sortBy=relevance&page=1&rowsPerPage=8"
+    browser.get(url)
+    waiting_to_load(browser)
+
+    main_view_divs = browser.find_elements_by_xpath(page_elements.get("main_view"))
+    for i in range(3):  # 网很慢 刷新三次 还是无网页就算了
+        if main_view_divs:
+            break
+        else:
+            time.sleep(3)
+            main_view_divs = browser.find_elements_by_xpath(
+                page_elements.get("main_view")
+            )
+    else:
+        raise ValueError(f"ingram无网页 part_number={part_number}")
+
+    # 无产品
+    no_results_divs = browser.find_elements_by_xpath(page_elements.get("no_results"))
+    if no_results_divs:  # 无产品 则创建空的obj
+        # 创建一个空的obj
+        obj, _ = models.IngramGood.objects.get_or_create(part_number=part_number)
+        obj.status = False
+        obj.refresh_at = datetime.datetime.now()
+        obj.save()
+
+    # 有产品
+    vpn_divs = browser.find_elements_by_xpath(page_elements.get("vpn_divs"))
+    if vpn_divs:
+        vpn = vpn_divs[0].text.strip()
+    else:
+        raise ValueError(f"vpn不存在 part_number={part_number}")
+
+    vpn_divs = browser.find_elements_by_xpath(page_elements.get("vpn_divs"))
+    if vpn_divs:
+        vpn = vpn_divs[0].text.strip()
+    else:
+        raise ValueError(f"vpn不存在 part_number={part_number}")
+
+    price_divs = browser.find_elements_by_xpath(page_elements.get("own_price"))
+    if price_divs:
+        price = text2dollar(price_divs[0].text, True)
+    else:
+        raise ValueError(f"price不存在 part_number={part_number}")
+
+    # 刷新obj
+    obj, _ = models.IngramGood.objects.get_or_create(part_number=part_number)
+    obj.vpn = vpn
+    obj.price = price
+    obj.status = True
+    obj.refresh_at = datetime.datetime.now()
+    obj.save()
 
 
 def refresh_ingram_goods(part_numbers) -> bool:
