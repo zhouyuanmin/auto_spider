@@ -503,6 +503,7 @@ def refresh_gsa_good(part_number, browser):
     # 到详细页采集数据
     for (mfr_part_number, product_name, mfr, source, url) in valid_source_urls:
         browser.get(url)
+        time.sleep(5)
         waiting_to_load(browser)
 
         # 增加判断是否需要邮编,有则跳过
