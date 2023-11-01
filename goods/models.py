@@ -36,6 +36,7 @@ class SynnexGood(BaseModel):
 
 class GSAGood(BaseModel):
     # 列表页
+    part_number = models.CharField(max_length=255, verbose_name="产品编号")  # part_number不作为主键 使用自动生成的主键
     mfr_part_number = models.CharField(max_length=255, default="", verbose_name="mfrPartNumber")  # 产品编号 等价于part_number
     product_name = models.CharField(max_length=255, default="", verbose_name="itemName")  # 产品名称
     mfr = models.CharField(max_length=255, default="", verbose_name="Mfr")  # 厂家名称
