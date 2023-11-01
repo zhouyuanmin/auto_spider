@@ -14,6 +14,9 @@ import sys
 import os
 import re
 
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, os.path.join(BASE_DIR, "auto_spider"))  # 解决命令行运行问题
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "auto_spider.settings")
 from django.core.wsgi import get_wsgi_application
 
