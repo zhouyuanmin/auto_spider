@@ -43,6 +43,7 @@ proxies = [
     "http://127.0.0.1:7780",
 ]
 window_width, window_height = (1250, 900)  # 需要根据分辨率来确定窗口大小
+no_screenshot = True
 synnex_username = "lwang@techfocusUSA.com"
 synnex_password = "/4WM9ZAtB6c8ph6"
 ingram_username = "lwang@techfocususa.com"
@@ -172,6 +173,10 @@ def create_browser(index=0):
 
 def save_error_screenshot(browser, sign, detail):
     """异常截图"""
+    global no_screenshot
+    if no_screenshot:
+        return None
+
     time_str = str(int(time.time() * 1000))
     file_name = f"{sign}_{time_str}_{detail}.png"
     file_name = os.path.join(ERROR_PATH, file_name)
