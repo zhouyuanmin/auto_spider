@@ -333,7 +333,7 @@ def refresh_synnex_good(part_number, browser):
         tbody = browser.find_elements_by_xpath(page_elements.get("tbody"))
         if tbody:  # 页面正常
             text = tbody[0].text
-            if "Your search found no result." in text:
+            if "Your search found no result." in text or "in this page is excluded" in text:
                 # 创建一个空的obj
                 obj, _ = models.SynnexGood.objects.get_or_create(
                     part_number=part_number
