@@ -273,6 +273,7 @@ def login_ingram():
         login_button = browser.find_element_by_xpath(page_elements.get("ingram_button"))
         login_button.click()
         waiting_to_load(browser)
+        time.sleep(3)  # 登陆后 等待页面跳转
         return browser
     else:
         return browser
