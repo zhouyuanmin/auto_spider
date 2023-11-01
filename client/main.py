@@ -368,6 +368,8 @@ def refresh_synnex_good(part_number, browser):
                 pass
             elif "in this page is excluded" in text:
                 pass
+            elif "in this page are excluded" in text:
+                pass
             else:  # 其他情况
                 raise ValueError(f"未知情况 part_number={part_number}")
 
