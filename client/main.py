@@ -644,7 +644,7 @@ def refresh_ingram_good(part_number, browser):
 
     url = f"https://usa.ingrammicro.com/cep/app/product/productsearch?displaytitle={part_number}&keywords={part_number}&sortBy=relevance&page=1&rowsPerPage=8"
     browser.get(url)
-    time.sleep(5)  # 降低爬取速度
+    time.sleep(15)  # 降低爬取速度
     waiting_to_load(browser)
 
     main_view_divs = browser.find_elements_by_xpath(page_elements.get("main_view"))
@@ -677,6 +677,7 @@ def refresh_ingram_good(part_number, browser):
         waiting_to_load(browser)
 
     # 有产品
+    time.sleep(7)
     vpn_divs = browser.find_elements_by_xpath(page_elements.get("vpn_divs"))
     if vpn_divs:
         vpn = vpn_divs[0].text.strip()
