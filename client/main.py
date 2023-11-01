@@ -29,6 +29,11 @@ logging.basicConfig(
     format="%(asctime)s - line:%(lineno)d - %(levelname)s: %(message)s",
 )
 
+# 异常文件夹
+ERROR_PATH = os.path.join(BASE_DIR, "auto_spider", "errors")
+if not os.path.exists(ERROR_PATH):
+    os.mkdir(ERROR_PATH)
+
 # 全局配置信息
 base_dir = Path(__file__).resolve().parent
 proxies = [
@@ -42,9 +47,9 @@ synnex_username = "lwang@techfocusUSA.com"
 synnex_password = "/4WM9ZAtB6c8ph6"
 ingram_username = "lwang@techfocususa.com"
 ingram_password = "3851330mM&"
-synnex_part_number_file = os.path.join(base_dir, "synnex_part_number_file.txt")
-gsa_part_number_file = os.path.join(base_dir, "gsa_part_number_file.txt")
-ingram_part_number_file = os.path.join(base_dir, "ingram_part_number_file.txt")
+synnex_part_number_file = os.path.join(ERROR_PATH, "synnex_part_number_file.txt")
+gsa_part_number_file = os.path.join(ERROR_PATH, "gsa_part_number_file.txt")
+ingram_part_number_file = os.path.join(ERROR_PATH, "ingram_part_number_file.txt")
 
 # 业务配置
 part_number_file = os.path.join(base_dir, "part_number_file.txt")
@@ -168,7 +173,7 @@ def save_error_screenshot(browser, sign, detail):
     """异常截图"""
     time_str = str(int(time.time() * 1000))
     file_name = f"{sign}_{time_str}_{detail}.png"
-    file_name = os.path.join(base_dir, file_name)
+    file_name = os.path.join(ERROR_PATH, file_name)
     browser.get_screenshot_as_file(file_name)
 
 
@@ -390,7 +395,7 @@ def refresh_synnex_goods(part_numbers) -> bool:
             traceback.print_exc(file=error_file)
             details = error_file.getvalue()
             file_name = f"{part_number}_{int(time.time())}"
-            file_name = os.path.join(base_dir, file_name)
+            file_name = os.path.join(ERROR_PATH, file_name)
             with open(f"{file_name}.txt", "w") as f:
                 f.write(details)
             save_error_screenshot(browser, "synnex", part_number)
@@ -589,7 +594,7 @@ def refresh_gsa_goods(part_numbers, index=0) -> bool:
             traceback.print_exc(file=error_file)
             details = error_file.getvalue()
             file_name = f"{part_number}_{int(time.time())}"
-            file_name = os.path.join(base_dir, file_name)
+            file_name = os.path.join(ERROR_PATH, file_name)
             with open(f"{file_name}.txt", "w") as f:
                 f.write(details)
             save_error_screenshot(browser, "gsa", part_number)
@@ -690,7 +695,7 @@ def refresh_ingram_goods(part_numbers) -> bool:
             traceback.print_exc(file=error_file)
             details = error_file.getvalue()
             file_name = f"{part_number}_{int(time.time())}"
-            file_name = os.path.join(base_dir, file_name)
+            file_name = os.path.join(ERROR_PATH, file_name)
             with open(f"{file_name}.txt", "w") as f:
                 f.write(details)
             save_error_screenshot(browser, "ingram", part_number)
