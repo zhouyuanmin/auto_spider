@@ -481,6 +481,7 @@ def refresh_gsa_good(part_number, browser):
         source_divs = product_div.find_elements_by_xpath(page_elements.get("sources"))
         if not source_divs:  # 有些产品 没有sources
             logging.warning(f"有些产品没有sources part_number={part_number}")
+            continue
             # raise ValueError(f"有些产品没有sources part_number={part_number}")
         source_div = product_div.find_element_by_xpath(page_elements.get("sources"))
         source = text2source(source_div.text)
