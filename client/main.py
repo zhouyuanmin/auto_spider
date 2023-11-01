@@ -696,10 +696,11 @@ def refresh_ingram_goods(part_numbers) -> bool:
         try:
             # 判断是否登陆了
             login_buttons = browser.find_elements_by_xpath(page_elements.get("lw"))
-            if login_buttons[0].text != "LW":  # 未登陆
+            if login_buttons and login_buttons[0].text == "LW":
+                refresh_ingram_good(part_number, browser)
+            else:  # 未登陆
                 browser.quit()
                 browser = login_ingram()
-            refresh_ingram_good(part_number, browser)
         except Exception as e:
             logging.error(e)
             error_file = StringIO()
