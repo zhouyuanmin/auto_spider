@@ -56,7 +56,7 @@ page_elements = {
     "ingram_username": '//*[@id="okta-signin-username"]',
     "ingram_password": '//*[@id="okta-signin-password"]',
     "ingram_button": '//*[@id="okta-signin-submit"]',
-    # "product_keywords": '//*[@id="searchText"]',
+    "product_keywords": '//*[@id="searchText"]',
     # "part_search_button": '//*[@id="partSearchBtn"]',
     "product_items": '//*[@id="searchResultTbody"]/tr',
     "tbody": '//*[@id="resultList"]//tbody',
@@ -279,6 +279,10 @@ def refresh_synnex_good(part_number, browser):
     browser.get(url)
     waiting_to_load(browser)
 
+    search_divs = browser.find_elements_by_xpath(page_elements.get("product_keywords"))
+    if not search_divs:  # 页面未加载完成
+        raise ValueError(f"页面未加载完成 part_number={part_number}")
+
     # 最低价产品(已排序 取第一个)
     product_items = browser.find_elements_by_xpath(page_elements.get("product_items"))
     if product_items:
@@ -338,13 +342,9 @@ def refresh_synnex_good(part_number, browser):
                 obj.refresh_at = datetime.datetime.now()
                 obj.save()
             else:  # 其他情况
-                global synnex_part_number_file
-                with open(synnex_part_number_file, "a+") as f:
-                    f.write(f"{part_number}\n")
+                raise ValueError(f"未知情况 part_number={part_number}")
         else:  # 页面异常
-            global synnex_part_number_file
-            with open(synnex_part_number_file, "a+") as f:
-                f.write(f"{part_number}\n")
+            raise ValueError(f"未知情况 part_number={part_number}")
 
 
 def refresh_synnex_goods(part_numbers) -> bool:
@@ -576,6 +576,10 @@ def refresh_gsa_goods(part_numbers, index=0) -> bool:
                 f.write(details)
             save_error_screenshot(browser, "gsa", part_number)
 
+            global gsa_part_number_file
+            with open(gsa_part_number_file, "a+") as f:
+                f.write(f"{part_number}\n")
+
     return False
 
 
@@ -670,6 +674,10 @@ def refresh_ingram_goods(part_numbers) -> bool:
             with open(f"{file_name}.txt", "w") as f:
                 f.write(details)
             save_error_screenshot(browser, "ingram", part_number)
+
+            global ingram_part_number_file
+            with open(ingram_part_number_file, "a+") as f:
+                f.write(f"{part_number}\n")
 
     return False
 
