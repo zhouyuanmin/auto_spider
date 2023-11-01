@@ -747,7 +747,7 @@ def spider():
     part_numbers = get_part_numbers(file, distinct=True)
     status = True
     status = refresh_synnex_goods(part_numbers) and status  # 不使用可以直接注释掉
-    status = refresh_gsa_goods(part_numbers) and status  # 不使用可以直接注释掉
+    status = refresh_gsa_goods(part_numbers, 0) and status  # 不使用可以直接注释掉
     status = refresh_ingram_goods(part_numbers) and status  # 不使用可以直接注释掉
     logging.info(f"{status}")
 
