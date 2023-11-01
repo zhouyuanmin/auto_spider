@@ -692,7 +692,11 @@ def refresh_ingram_good(part_number, browser):
 
     price_divs = browser.find_elements_by_xpath(page_elements.get("own_price"))
     if price_divs:
-        price = text2dollar(price_divs[0].text, True)
+        text = price_divs[0].text
+        if text == "Not Available":
+            price = 0
+        else:
+            price = text2dollar(text, True)
     else:
         raise ValueError(f"price不存在 part_number={part_number}")
 
@@ -758,7 +762,7 @@ def spider():
     part_numbers = get_part_numbers(file, distinct=True)
     status = True
     status = refresh_synnex_goods(part_numbers) and status  # 不使用可以直接注释掉
-    status = refresh_gsa_goods(part_numbers, 0) and status  # 不使用可以直接注释掉
+    status = refresh_gsa_goods(part_numbers, 1) and status  # 不使用可以直接注释掉
     status = refresh_ingram_goods(part_numbers) and status  # 不使用可以直接注释掉
     logging.info(f"{status}")
 
