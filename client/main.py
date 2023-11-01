@@ -737,7 +737,8 @@ def refresh_ingram_goods(part_numbers) -> bool:
                 refresh_ingram_good(part_number, browser)
             else:  # 未登陆
                 browser.quit()
-                browser = login_ingram()
+                # browser = login_ingram()
+                sys.exit(0)  # 保持账号稳定 直接退出
         except Exception as e:
             logging.error(e)
             error_file = StringIO()
@@ -762,7 +763,7 @@ def spider():
     part_numbers = get_part_numbers(file, distinct=True)
     status = True
     status = refresh_synnex_goods(part_numbers) and status  # 不使用可以直接注释掉
-    status = refresh_gsa_goods(part_numbers, 1) and status  # 不使用可以直接注释掉
+    status = refresh_gsa_goods(part_numbers, 0) and status  # 不使用可以直接注释掉
     status = refresh_ingram_goods(part_numbers) and status  # 不使用可以直接注释掉
     logging.info(f"{status}")
 
