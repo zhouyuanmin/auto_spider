@@ -42,12 +42,12 @@ synnex_username = "lwang@techfocusUSA.com"
 synnex_password = "/4WM9ZAtB6c8ph6"
 ingram_username = "lwang@techfocususa.com"
 ingram_password = "3851330mM&"
-synnex_part_number_file = "synnex_part_number_file.txt"
-gsa_part_number_file = "gsa_part_number_file.txt"
-ingram_part_number_file = "ingram_part_number_file.txt"
+synnex_part_number_file = os.path.join(base_dir, "synnex_part_number_file.txt")
+gsa_part_number_file = os.path.join(base_dir, "gsa_part_number_file.txt")
+ingram_part_number_file = os.path.join(base_dir, "ingram_part_number_file.txt")
 
 # 业务配置
-part_number_file = "part_number_file.txt"
+part_number_file = os.path.join(base_dir, "part_number_file.txt")
 effective_days = 7  # 刷新有效时间
 gsa_source_level = 1  # gsa网站source最低值
 
@@ -376,6 +376,13 @@ def refresh_synnex_goods(part_numbers) -> bool:
     browser = login_synnex()
     for part_number in part_numbers:
         try:
+            # 判断是否登陆了
+            login_buttons = browser.find_elements_by_xpath(
+                page_elements.get("login_email")
+            )
+            if login_buttons:  # 未登陆
+                browser.quit()
+                browser = login_synnex()
             refresh_synnex_good(part_number, browser)
         except Exception as e:
             logging.error(e)
@@ -383,6 +390,7 @@ def refresh_synnex_goods(part_numbers) -> bool:
             traceback.print_exc(file=error_file)
             details = error_file.getvalue()
             file_name = f"{part_number}_{int(time.time())}"
+            file_name = os.path.join(base_dir, file_name)
             with open(f"{file_name}.txt", "w") as f:
                 f.write(details)
             save_error_screenshot(browser, "synnex", part_number)
@@ -581,6 +589,7 @@ def refresh_gsa_goods(part_numbers, index=0) -> bool:
             traceback.print_exc(file=error_file)
             details = error_file.getvalue()
             file_name = f"{part_number}_{int(time.time())}"
+            file_name = os.path.join(base_dir, file_name)
             with open(f"{file_name}.txt", "w") as f:
                 f.write(details)
             save_error_screenshot(browser, "gsa", part_number)
@@ -681,6 +690,7 @@ def refresh_ingram_goods(part_numbers) -> bool:
             traceback.print_exc(file=error_file)
             details = error_file.getvalue()
             file_name = f"{part_number}_{int(time.time())}"
+            file_name = os.path.join(base_dir, file_name)
             with open(f"{file_name}.txt", "w") as f:
                 f.write(details)
             save_error_screenshot(browser, "ingram", part_number)
