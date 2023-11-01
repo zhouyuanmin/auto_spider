@@ -244,6 +244,19 @@ def login_ingram():
         browser.get("https://usa.ingrammicro.com/cep/app/login")
         waiting_to_load(browser)
 
+    login_buttons = browser.find_elements_by_xpath(page_elements.get("ingram_username"))
+    for i in range(3):  # 网很慢 刷新三次 还是无网页就算了
+        if login_buttons:
+            break
+        else:
+            time.sleep(3)
+            login_buttons = browser.find_elements_by_xpath(
+                page_elements.get("ingram_username")
+            )
+    else:
+        logging.error(f"ingram无网页 登陆失败")
+        return browser
+
     # 登录
     login_buttons = browser.find_elements_by_xpath(page_elements.get("ingram_username"))
     if login_buttons:
@@ -431,6 +444,8 @@ def refresh_gsa_good(part_number, browser):
     search_divs = browser.find_elements_by_xpath(page_elements.get("search"))
     if not search_divs:  # 页面未加载完成
         raise ValueError(f"页面未加载完成 part_number={part_number}")
+
+    time.sleep(2)  # 降低爬取速度
 
     product_divs = browser.find_elements_by_xpath(page_elements.get("product_list"))
     if not product_divs:  # 无产品列表
@@ -623,6 +638,8 @@ def refresh_ingram_good(part_number, browser):
     url = f"https://usa.ingrammicro.com/cep/app/product/productsearch?displaytitle={part_number}&keywords={part_number}&sortBy=relevance&page=1&rowsPerPage=8"
     browser.get(url)
     waiting_to_load(browser)
+
+    time.sleep(2)  # 降低爬取速度
 
     main_view_divs = browser.find_elements_by_xpath(page_elements.get("main_view"))
     for i in range(3):  # 网很慢 刷新三次 还是无网页就算了
