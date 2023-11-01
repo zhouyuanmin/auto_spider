@@ -63,7 +63,7 @@ page_elements = {
     # "product_href": '//*[@id="searchResultTbody"]/tr[1]/td/strong/a',
     "msrp": '//*[@class="msrp"]/span',
     "price_info": '//*[@class="price-info"]/a',
-    "mfr_part_no": '//*[@id="searchResultTbody"]//tbody/tr[1]/td[1]/span',
+    "mfr_part_no": '//*[@id="searchResultTbody"]//strong[contains(text(),"Mfr.P/N:")]/following-sibling::span[1]',
     # "sku": '//*[@id="searchResultTbody"]/tr[1]/td[3]/table/tbody/tr[1]/td[2]',
     "mfr": '//*[@id="searchResultTbody"]//div[@class="company-name"]',
     "search": '//*[@id="globalSearch"]',
@@ -360,6 +360,7 @@ def refresh_synnex_goods(part_numbers) -> bool:
     ).values_list("part_number", flat=True)
     part_numbers = set(part_numbers) - set(exist_part_numbers)
     part_numbers = list(part_numbers)
+    part_numbers.sort()
 
     if not part_numbers:
         return True
@@ -557,6 +558,7 @@ def refresh_gsa_goods(part_numbers, index=0) -> bool:
     ).values_list("part_number", flat=True)
     part_numbers = set(part_numbers) - set(exist_part_numbers)
     part_numbers = list(part_numbers)
+    part_numbers.sort()
 
     if not part_numbers:
         return True
@@ -656,6 +658,7 @@ def refresh_ingram_goods(part_numbers) -> bool:
     ).values_list("part_number", flat=True)
     part_numbers = set(part_numbers) - set(exist_part_numbers)
     part_numbers = list(part_numbers)
+    part_numbers.sort()
 
     if not part_numbers:
         return True
