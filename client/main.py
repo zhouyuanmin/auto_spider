@@ -68,11 +68,13 @@ page_elements = {
     "mfr": '//*[@id="searchResultTbody"]//div[@class="company-name"]',
     "search": '//*[@id="globalSearch"]',
     "product_list": '//*[@class="productListControl isList"]/app-ux-product-display-inline',
+    "zero_results": '//*[@id="zero-results-main"]//h4',
     "sources": './/span[@align="left"]',
     "item_a": './/div[@class="itemName"]//a',
     "mfr_name": './/div[@class="mfrName"]',
     "mfr_part_no_gsa": './/div[@class="mfrPartNumber"]',
     "product_name": '//h4[@role="heading"]',
+    "all_description": '//div[@class="product-details-accordion"]',
     "product_description": '//div[@heading="Product Description"]/div',
     "description_strong": '//div[@heading="Vendor Description"]/strong',
     "description": '//div[@heading="Vendor Description"]/div',
@@ -80,7 +82,8 @@ page_elements = {
     "zip": '//input[@id="zip"]',
     "search_msrp": '//*[@id="search-container"]//div[@class="css-j7qwjs"]',
     "main_view": '//*[@id="main-view"]/div/div[1]/div/div[1]',
-    "coo_divs": '//*[@id="main"]//li',
+    "mas_sin": '//*[@id="main"]//strong[contains(text(),"MAS Schedule/SIN")]/../following-sibling::div[1]',
+    "coo_divs": '//*[@id="main"]//strong[contains(text(),"Country of Origin")]/../following-sibling::div[1]',
 }
 
 
@@ -174,6 +177,11 @@ def text2dollar(text, sign=True):
     return dollar
 
 
+def text2source(text):
+    nums = re.findall(r"From (\d+) source", text)
+    return int(nums[0])
+
+
 def login_synnex():
     global synnex_username
     global synnex_password
@@ -262,6 +270,8 @@ def refresh_synnex_good(part_number, browser):
     刷新 synnex_good
     爬过 不管是否有数据 都会刷新refresh_at
     """
+    logging.info(f"刷新 synnex_good {part_number}")
+
     url = f"https://ec.synnex.com/ecx/part/searchResult.html?begin=0&offset=20&keyword={part_number}&sortField=reference_price&spaType=FG"
     browser.get(url)
     waiting_to_load(browser)
@@ -375,11 +385,161 @@ def refresh_synnex_goods(part_numbers) -> bool:
 
 def refresh_gsa_good(part_number, browser):
     """
-    TODO: 刷新 gsa_good
+    刷新 gsa_good
     爬过 不管是否有数据 都会刷新refresh_at
     爬过 无数据则新增一个空obj
     爬过 有数据则会删除就数据 插入新数据
     """
+    logging.info(f"刷新 gsa_good {part_number}")
+
+    url = f"https://www.gsaadvantage.gov/advantage/ws/search/advantage_search?q=0:8{part_number}&db=0&searchType=0"
+    browser.get(url)
+    time.sleep(5)
+    waiting_to_load(browser)
+
+    search_divs = browser.find_elements_by_xpath(page_elements.get("search"))
+    if not search_divs:  # 页面未加载完成
+        raise ValueError(f"页面未加载完成 part_number={part_number}")
+
+    product_divs = browser.find_elements_by_xpath(page_elements.get("product_list"))
+    if not product_divs:  # 无产品列表
+        zero_results_divs = browser.find_elements_by_xpath(
+            page_elements.get("zero_results")
+        )
+        if zero_results_divs:  # 确实无产品 则创建空的obj
+            # 创建一个空的obj
+            obj, _ = models.GSAGood.objects.get_or_create(part_number=part_number)
+            obj.refresh_at = datetime.datetime.now()
+            obj.save()
+        else:
+            raise ValueError(f"未知情况 part_number={part_number}")
+
+    # 有产品列表
+    valid_source_urls = []
+    first_source_urls = []
+    for product_div in product_divs:
+        mfr_part_number_div = product_div.find_element_by_xpath(
+            page_elements.get("mfr_part_no_gsa")
+        )
+        mfr_part_number = mfr_part_number_div.text.strip()
+
+        url_div = product_div.find_element_by_xpath(page_elements.get("item_a"))
+        url = url_div.get_attribute("href")
+
+        product_name = url_div.text
+
+        mfr_div = product_div.find_element_by_xpath(page_elements.get("mfr_name"))
+        mfr = mfr_div.text[4:].strip()
+
+        source_divs = product_div.find_elements_by_xpath(page_elements.get("sources"))
+        if not source_divs:  # 有些产品 没有sources
+            raise ValueError(f"有些产品没有sources part_number={part_number}")
+        source_div = product_div.find_element_by_xpath(page_elements.get("sources"))
+        source = text2source(source_div.text)
+
+        if source >= 1:  # 都爬取
+            valid_source_urls.append([mfr_part_number, product_name, mfr, source, url])
+        elif not first_source_urls:
+            first_source_urls.append([mfr_part_number, product_name, mfr, source, url])
+
+    # 排序,取前3
+    valid_source_urls = sorted(
+        valid_source_urls, key=lambda x: x[3], reverse=True
+    )  # 使用source排序 从大到小
+    if len(valid_source_urls) > 3:
+        valid_source_urls = valid_source_urls[0:3]
+
+    if not valid_source_urls:  # 如果没有符合要求的,则采集第一个产品
+        valid_source_urls = first_source_urls
+
+    gsa_data = []
+    # 到详细页采集数据
+    for (mfr_part_number, product_name, mfr, source, url) in valid_source_urls:
+        browser.get(url)
+        waiting_to_load(browser)
+
+        # 增加判断是否需要邮编,有则跳过
+        zip_div = browser.find_elements_by_xpath(page_elements.get("zip"))
+        if zip_div:
+            continue
+
+        search_divs = browser.find_elements_by_xpath(page_elements.get("search"))
+        if not search_divs:  # 页面未加载完成
+            raise ValueError(f"页面未加载完成 part_number={part_number}")
+
+        mas_sin_divs = browser.find_elements_by_xpath(page_elements.get("mas_sin"))
+        if mas_sin_divs:
+            mas_sin = mas_sin_divs[0].text.strip()
+        else:
+            raise ValueError(f"mas_sin不存在 part_number={part_number}")
+
+        coo_divs = browser.find_elements_by_xpath(page_elements.get("coo_divs"))
+        if coo_divs:
+            coo = coo_divs[0].text.strip()
+        else:
+            raise ValueError(f"coo不存在 part_number={part_number}")
+
+        description_div = browser.find_element_by_xpath(
+            page_elements.get("all_description")
+        )
+        description = description_div.text
+        if len(description) > 2047:
+            description = description[0:2047]
+
+        gsa_advantage_price_divs = browser.find_elements_by_xpath(
+            page_elements.get("gsa_advantage_price")
+        )
+        gsa_advantage_price_divs = gsa_advantage_price_divs[1:]  # 去掉title
+        gsa_advantage_prices = [0, 0, 0]
+        for i, div in enumerate(gsa_advantage_price_divs):
+            if i >= 3:  # 0,1,2
+                break
+            gsa_advantage_prices[i] = text2dollar(div.text)
+        gsa_price_1, gsa_price_2, gsa_price_3 = gsa_advantage_prices
+
+        gsa_row = [
+            part_number,
+            mfr_part_number,
+            product_name,
+            mfr,
+            source,
+            url,
+            mas_sin,
+            coo,
+            description,
+            gsa_price_1,
+            gsa_price_2,
+            gsa_price_3,
+        ]
+        gsa_data.append(gsa_row)
+
+    if gsa_data:
+        # 先删后增
+        models.GSAGood.objects.filter(part_number=part_number).delete()
+        gsa_objs = []
+        for gsa_row in gsa_data:
+            gsa_obj = models.GSAGood(
+                part_number=gsa_row[0],
+                mfr_part_number=gsa_row[1],
+                product_name=gsa_row[2],
+                mfr=gsa_row[3],
+                source=gsa_row[4],
+                url=gsa_row[5],
+                mas_sin=gsa_row[6],
+                coo=gsa_row[7],
+                description=gsa_row[8],
+                gsa_price_1=gsa_row[9],
+                gsa_price_2=gsa_row[10],
+                gsa_price_3=gsa_row[11],
+            )
+            gsa_objs.append(gsa_obj)
+        models.GSAGood.objects.bulk_create(gsa_objs)
+    else:
+        # 没数据 详情页数据爬取失败的情况
+        # 创建一个空的obj
+        obj, _ = models.GSAGood.objects.get_or_create(part_number=part_number)
+        obj.refresh_at = datetime.datetime.now()
+        obj.save()
 
 
 def refresh_gsa_goods(part_numbers, index=0) -> bool:
