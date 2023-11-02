@@ -745,6 +745,7 @@ def refresh_ingram_goods(part_numbers) -> bool:
             else:  # 未登陆
                 browser.quit()
                 # browser = login_ingram()
+                logging.error("Ingram账号退出")
                 sys.exit(0)  # 保持账号稳定 直接退出
         except Exception as e:
             logging.error(e)
