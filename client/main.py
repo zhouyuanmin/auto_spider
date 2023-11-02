@@ -400,6 +400,7 @@ def refresh_synnex_goods(part_numbers) -> bool:
 
     if not part_numbers:
         return True
+    logging.info(len(part_numbers))
 
     # 开始爬取part_numbers
     browser = login_synnex()
@@ -611,6 +612,7 @@ def refresh_gsa_goods(part_numbers, index=0) -> bool:
 
     if not part_numbers:
         return True
+    logging.info(len(part_numbers))
 
     # 开始爬取part_numbers
     browser = create_browser(index)
@@ -726,6 +728,7 @@ def refresh_ingram_goods(part_numbers) -> bool:
 
     if not part_numbers:
         return True
+    logging.info(len(part_numbers))
 
     # 开始爬取part_numbers
     browser = login_ingram()
