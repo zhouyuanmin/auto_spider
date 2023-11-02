@@ -809,5 +809,107 @@ def spider():
     logging.info(f"{status}")
 
 
+def get_valid_part_number_txt(source_txt_path, filter_txt_path, valid_txt_path):
+    """
+    获取有效part_number.txt
+    source_txt_path - filter_txt_path 再去重后 存入valid_txt_path
+    source_txt_path: 源txt
+    filter_txt_path: 过滤txt
+    valid_txt_path: 有效txt
+    """
+    source_valid_parts = set(get_part_numbers(source_txt_path, distinct=True))
+    filter_valid_parts = set(get_part_numbers(filter_txt_path, distinct=True))
+    valid_valid_parts = source_valid_parts - filter_valid_parts
+    with open(valid_txt_path, "w+") as f:
+        for part_number in valid_valid_parts:
+            f.write(f"{part_number}\n")
+
+
+def export(
+    input_xlsx_path,
+    output_xlsx_path,
+    valid_txt_path,
+    row_index,
+    sheet_index=0,
+    begin_row=0,
+):
+    """
+    导出xlsx
+    input_xlsx_path: 原文件
+    output_xlsx_path: 输出文件
+    valid_txt_path: 需要保留的part_numbers
+    """
+    part_numbers = get_part_numbers(valid_txt_path)
+    part_number_set = set(part_numbers)
+
+    new_data = []
+    data = get_data_by_excel(input_xlsx_path, sheet_index, begin_row)
+    row_title = data[0]
+    synnex_titles = ["mfr", "mfr_p_n", "msrp", "federal_govt_price"]
+    gsa_titles = [
+        "part_number",
+        "mfr_part_number",
+        "product_name",
+        "mfr",
+        "source",
+        "url",
+        "mas_sin",
+        "coo",
+        "description",
+        "gsa_price_1",
+        "gsa_price_2",
+        "gsa_price_3",
+    ]
+    ingram_titles = ["vpn", "price"]
+    row_title.extend(synnex_titles)
+    row_title.extend(gsa_titles)
+    row_title.extend(ingram_titles)
+
+    new_data.append(row_title)
+    for row in data[1:]:
+        part_number = row[row_index]
+        if part_number in part_numbers:
+            part_number_set.discard(part_number)
+        else:
+            continue
+
+        # 在row的后面添加爬取的数据 并放入new_data
+        synnex_obj = models.SynnexGood.objects.get_or_create(part_number=part_number)
+        synnex_fields = [
+            synnex_obj.mfr,
+            synnex_obj.mfr_p_n,
+            synnex_obj.msrp,
+            synnex_obj.federal_govt_price,
+        ]
+
+        ingram_obj = models.IngramGood.objects.get_or_create(part_number=part_number)
+        ingram_fields = [ingram_obj.vpn, ingram_obj.price]
+
+        gsa_objs = models.GSAGood.objects.filter(part_number=part_number)
+        if not gsa_objs:
+            gsa_obj = models.GSAGood.objects.get_or_create(part_number=part_number)
+            gsa_objs = [gsa_obj]
+
+        for gsa_obj in gsa_objs:
+            gsa_fields = [
+                gsa_obj.part_number,
+                gsa_obj.mfr_part_number,
+                gsa_obj.product_name,
+                gsa_obj.mfr,
+                gsa_obj.source,
+                gsa_obj.url,
+                gsa_obj.mas_sin,
+                gsa_obj.coo,
+                gsa_obj.description,
+                gsa_obj.gsa_price_1,
+                gsa_obj.gsa_price_2,
+                gsa_obj.gsa_price_3,
+            ]
+            new_row = row + synnex_fields + gsa_fields + ingram_fields
+            new_data.append(new_row)
+
+    save_data_to_excel(output_xlsx_path, new_data)
+
+
 if __name__ == "__main__":
     spider()
