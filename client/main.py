@@ -313,7 +313,7 @@ def refresh_synnex_good(part_number, browser):
     if not search_divs:  # 页面未加载完成
         raise ValueError(f"页面未加载完成 part_number={part_number}")
 
-    time.sleep(2)  # 降低爬取速度
+    time.sleep(10)  # 降低爬取速度
 
     # 最低价产品(已排序 取第一个)
     product_items = browser.find_elements_by_xpath(page_elements.get("product_items"))
@@ -413,6 +413,8 @@ def refresh_synnex_goods(part_numbers) -> bool:
             if login_buttons:  # 未登陆
                 browser.quit()
                 browser = login_synnex()
+
+            time.sleep(30)  # 限制爬取速度 防止封号
             refresh_synnex_good(part_number, browser)
         except Exception as e:
             logging.error(e)
