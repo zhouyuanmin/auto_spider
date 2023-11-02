@@ -530,6 +530,8 @@ def refresh_gsa_good(part_number, browser):
         coo_divs = browser.find_elements_by_xpath(page_elements.get("coo_divs"))
         if coo_divs:
             coo = coo_divs[0].text.strip()
+        elif mas_sin:  # 当coo不存在 但mas_sin存在 则设置coo为空字符串
+            coo = ""
         else:
             raise ValueError(f"coo不存在 part_number={part_number}")
 
