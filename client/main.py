@@ -699,6 +699,8 @@ def refresh_ingram_good(part_number, browser):
             price = 0
         else:
             price = text2dollar(text, True)
+    elif vpn:  # 当price不存在 但vpn存在 则设置price为0
+        price = 0
     else:
         raise ValueError(f"price不存在 part_number={part_number}")
 
@@ -765,8 +767,8 @@ def spider():
     file = part_number_file  # 可以直接修改
     part_numbers = get_part_numbers(file, distinct=True)
     status = True
-    status = refresh_synnex_goods(part_numbers) and status  # 不使用可以直接注释掉
-    status = refresh_gsa_goods(part_numbers, 0) and status  # 不使用可以直接注释掉
+    # status = refresh_synnex_goods(part_numbers) and status  # 不使用可以直接注释掉 账号被封了暂时用不了
+    status = refresh_gsa_goods(part_numbers, 1) and status  # 不使用可以直接注释掉
     status = refresh_ingram_goods(part_numbers) and status  # 不使用可以直接注释掉
     logging.info(f"{status}")
 
