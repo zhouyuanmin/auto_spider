@@ -8,7 +8,6 @@ import datetime
 import logging
 import random
 import xlrd
-import json
 import time
 import sys
 import os
@@ -182,6 +181,34 @@ def save_error_screenshot(browser, sign, detail):
     file_name = f"{sign}_{time_str}_{detail}.png"
     file_name = os.path.join(ERROR_PATH, file_name)
     browser.get_screenshot_as_file(file_name)
+
+
+def get_data_by_excel(path, sheet_index=0, begin_row=1):
+    """读取excel 返回所有行"""
+    excel_data = xlrd.open_workbook(filename=path)
+    table = excel_data.sheets()[sheet_index]
+    data = []
+    for i in range(begin_row, table.nrows):
+        data.append(table.row_values(i))
+    return data
+
+
+def save_data_to_excel(path, data):
+    """
+    将data数据输出到excel
+    data: [[1,2,3],[1,2,3]]
+    path: xxx.xlsx
+    """
+    work_book = xlsxwriter.Workbook(path)
+    work_sheet = work_book.add_worksheet()
+    row = 0  # 表头从第0行开始写
+    for line in data:
+        col = 0
+        for value in line:
+            work_sheet.write(row, col, value)
+            col += 1
+        row += 1
+    work_book.close()
 
 
 # 业务基础函数
@@ -717,7 +744,7 @@ def refresh_ingram_good(part_number, browser):
     obj.save()
 
 
-def refresh_ingram_goods(part_numbers) -> bool:
+def refresh_ingram_goods(part_numbers, debug=True) -> bool:
     """
     return: bool True表示所有数据都有效、False还有数据需要更新
     """
@@ -745,10 +772,14 @@ def refresh_ingram_goods(part_numbers) -> bool:
             if login_buttons and login_buttons[0].text == "LW":
                 refresh_ingram_good(part_number, browser)
             else:  # 未登陆
-                browser.quit()
-                # browser = login_ingram()
-                logging.error("Ingram账号退出")
-                sys.exit(0)  # 保持账号稳定 直接退出
+                logging.error("Ingram登陆状态异常")
+                if debug:
+                    input("请输入任意键继续")
+                else:
+                    logging.error("Ingram账号退出")
+                    browser.quit()  # 保持账号稳定 直接关闭
+                    sys.exit(0)
+                    # browser = login_ingram()  # 重新登陆
         except Exception as e:
             logging.error(e)
             error_file = StringIO()
@@ -773,7 +804,7 @@ def spider():
     part_numbers = get_part_numbers(file, distinct=True)
     status = True
     # status = refresh_synnex_goods(part_numbers) and status  # 不使用可以直接注释掉 账号被封了暂时用不了
-    status = refresh_gsa_goods(part_numbers, 1) and status  # 不使用可以直接注释掉
+    status = refresh_gsa_goods(part_numbers, 0) and status  # 不使用可以直接注释掉
     status = refresh_ingram_goods(part_numbers) and status  # 不使用可以直接注释掉
     logging.info(f"{status}")
 
