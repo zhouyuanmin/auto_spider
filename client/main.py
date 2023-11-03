@@ -825,19 +825,13 @@ def get_valid_part_number_txt(source_txt_path, filter_txt_path, valid_txt_path):
             f.write(f"{part_number}\n")
 
 
-def export(
-    input_xlsx_path,
-    output_xlsx_path,
-    valid_txt_path,
-    row_index,
-    sheet_index=0,
-    begin_row=0,
-):
+def export(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_index=0, begin_row=0):
     """
     导出xlsx
     input_xlsx_path: 原文件
     output_xlsx_path: 输出文件
     valid_txt_path: 需要保留的part_numbers
+    row_index: part_number所在列
     """
     part_numbers = get_part_numbers(valid_txt_path)
     part_number_set = set(part_numbers)
