@@ -841,7 +841,6 @@ def export(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_i
     row_title = data[0]
     synnex_titles = ["mfr", "mfr_p_n", "msrp", "federal_govt_price"]
     gsa_titles = [
-        "part_number",
         "mfr_part_number",
         "product_name",
         "mfr",
@@ -868,7 +867,7 @@ def export(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_i
             continue
 
         # 在row的后面添加爬取的数据 并放入new_data
-        synnex_obj = models.SynnexGood.objects.get_or_create(part_number=part_number)
+        synnex_obj, _ = models.SynnexGood.objects.get_or_create(part_number=part_number)
         synnex_fields = [
             synnex_obj.mfr,
             synnex_obj.mfr_p_n,
@@ -876,17 +875,16 @@ def export(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_i
             synnex_obj.federal_govt_price,
         ]
 
-        ingram_obj = models.IngramGood.objects.get_or_create(part_number=part_number)
+        ingram_obj, _ = models.IngramGood.objects.get_or_create(part_number=part_number)
         ingram_fields = [ingram_obj.vpn, ingram_obj.price]
 
         gsa_objs = models.GSAGood.objects.filter(part_number=part_number)
         if not gsa_objs:
-            gsa_obj = models.GSAGood.objects.get_or_create(part_number=part_number)
+            gsa_obj, _ = models.GSAGood.objects.get_or_create(part_number=part_number)
             gsa_objs = [gsa_obj]
 
         for gsa_obj in gsa_objs:
             gsa_fields = [
-                gsa_obj.part_number,
                 gsa_obj.mfr_part_number,
                 gsa_obj.product_name,
                 gsa_obj.mfr,
