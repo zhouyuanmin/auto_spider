@@ -679,7 +679,7 @@ def refresh_gsa_good_by_url(url, browser):
 
     # 到详细页采集数据
     browser.get(url)
-    time.sleep(5)
+    time.sleep(10)
     waiting_to_load(browser)
 
     # 增加判断是否需要邮编,有则跳过
