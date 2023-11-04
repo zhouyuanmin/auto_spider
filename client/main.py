@@ -231,19 +231,6 @@ def text2source(text):
     return int(nums[0])
 
 
-def trim_gsa_description(text):
-    # 去掉开头的两行包括Description的
-    rows = text.split("\n")
-    index = 0
-    if "Description" in rows[0]:
-        index = 1
-    if "Description" in rows[1]:
-        index = 2
-    rows = rows[index:]
-    text = "\n".join(rows)
-    return text
-
-
 def login_synnex():
     global synnex_username
     global synnex_password
