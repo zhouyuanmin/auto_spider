@@ -49,6 +49,7 @@ ingram_username = "lwang@techfocususa.com"
 ingram_password = "3851330mM&"
 synnex_part_number_file = os.path.join(ERROR_PATH, "synnex_part_number_file.txt")
 gsa_part_number_file = os.path.join(ERROR_PATH, "gsa_part_number_file.txt")
+gsa_url_file = os.path.join(ERROR_PATH, "gsa_url_file.txt")
 ingram_part_number_file = os.path.join(ERROR_PATH, "ingram_part_number_file.txt")
 
 # 业务配置
@@ -92,6 +93,7 @@ page_elements = {
     "main_view": '//*[@id="main-view"]/div/div[1]/div/div[1]',
     "mas_sin": '//*[@id="main"]//strong[contains(text(),"MAS Schedule/SIN")]/../following-sibling::div[1]',
     "coo_divs": '//*[@id="main"]//strong[contains(text(),"Country of Origin")]/../following-sibling::div[1]',
+    "manufacturer_divs": '//*[@id="main"]//strong[contains(text(),"Manufacturer")]/../following-sibling::div[1]',
     "vpn_divs": '//*[@id="main-view"]//span[contains(text(),"VPN:")]/following-sibling::span[1]',
     "no_results": '//*[@id="search-container"]//h1[contains(text(),"Sorry, no results found!")]',
     "own_price": '//*[@id="main-view"]//div[@class="ownPrice no-print css-lqai7o"]',
@@ -665,6 +667,127 @@ def refresh_gsa_goods(part_numbers, index=0) -> bool:
             with open(gsa_part_number_file, "a+") as f:
                 f.write(f"{part_number}\n")
 
+    return False
+
+
+def refresh_gsa_good_by_url(url, browser):
+    """
+    刷新 gsa_good_by_url
+    爬过 不管是否有数据 都会刷新refresh_at
+    """
+    logging.info(f"刷新 gsa_good_by_url {url}")
+
+    # 到详细页采集数据
+    browser.get(url)
+    time.sleep(5)
+    waiting_to_load(browser)
+
+    # 增加判断是否需要邮编,有则跳过
+    zip_div = browser.find_elements_by_xpath(page_elements.get("zip"))
+    if zip_div:
+        raise ValueError(f"页面未加载完成 有邮编 url={url}")
+
+    search_divs = browser.find_elements_by_xpath(page_elements.get("search"))
+    if not search_divs:  # 页面未加载完成
+        raise ValueError(f"页面未加载完成 url={url}")
+
+    mas_sin_divs = browser.find_elements_by_xpath(page_elements.get("mas_sin"))
+    if mas_sin_divs:
+        mas_sin = mas_sin_divs[0].text.strip()
+    else:
+        raise ValueError(f"mas_sin不存在 url={url}")
+
+    coo_divs = browser.find_elements_by_xpath(page_elements.get("coo_divs"))
+    if coo_divs:
+        coo = coo_divs[0].text.strip()
+    elif mas_sin:  # 当coo不存在 但mas_sin存在 则设置coo为空字符串
+        coo = ""
+    else:
+        raise ValueError(f"coo不存在 url={url}")
+
+    description_div = browser.find_element_by_xpath(
+        page_elements.get("all_description")
+    )
+    description = description_div.text
+    if len(description) > 2047:
+        description = description[0:2047]
+
+    gsa_advantage_price_divs = browser.find_elements_by_xpath(
+        page_elements.get("gsa_advantage_price")
+    )
+    gsa_advantage_price_divs = gsa_advantage_price_divs[1:]  # 去掉title
+    gsa_advantage_prices = [0, 0, 0]
+    for i, div in enumerate(gsa_advantage_price_divs):
+        if i >= 3:  # 0,1,2
+            break
+        gsa_advantage_prices[i] = text2dollar(div.text)
+    gsa_price_1, gsa_price_2, gsa_price_3 = gsa_advantage_prices
+
+    manufacturer_divs = browser.find_elements_by_xpath(page_elements.get("mas_sin"))
+    if manufacturer_divs:
+        manufacturer = manufacturer_divs[0].text.strip()
+    else:
+        raise ValueError(f"manufacturer不存在 url={url}")
+
+    # 刷新此url的所有objs
+    objs = models.GSAGood.objects.filter(url=url)
+    for obj in objs:
+        obj.mas_sin = mas_sin
+        obj.coo = coo
+        obj.description = description
+        obj.gsa_price_1 = gsa_price_1
+        obj.gsa_price_2 = gsa_price_2
+        obj.gsa_price_3 = gsa_price_3
+        obj.manufacturer = manufacturer
+        obj.refresh_at = datetime.datetime.now()
+        obj.save()
+
+
+def refresh_gsa_goods_by_urls(url_txt_path, effective_time_str, index=0) -> bool:
+    """
+    url_txt_path: url文件
+    effective_time_str: "2023-11-04 12:17:29"
+    return: bool True表示所有数据都有效、False还有数据需要更新
+    """
+    # 找出待爬取的urls
+    urls = get_part_numbers(url_txt_path, distinct=True)
+    effective_time = datetime.datetime.strptime(effective_time_str, "%Y-%m-%d %H:%M:%S")
+    exist_urls = models.GSAGood.objects.filter(
+        refresh_at__gt=effective_time  # 在有效期内
+    ).values_list("url", flat=True)
+    urls = set(urls) - set(exist_urls)
+    urls = list(urls)
+    if index:  # 默认 0 或者 1
+        urls.sort(reverse=True)
+    else:
+        urls.sort()
+
+    if not urls:
+        logging.info(f"{True}")
+        return True
+    logging.info(len(urls))
+
+    # 开始爬取urls
+    browser = create_browser(index)
+    for url in urls:
+        try:
+            refresh_gsa_good_by_url(url, browser)
+        except Exception as e:
+            logging.error(e)
+            error_file = StringIO()
+            traceback.print_exc(file=error_file)
+            details = error_file.getvalue()
+            file_name = f"url_{int(time.time())}"
+            file_name = os.path.join(ERROR_PATH, file_name)
+            with open(f"{file_name}.txt", "w") as f:
+                f.write(details)
+            save_error_screenshot(browser, "gsa", "url")
+
+            global gsa_url_file
+            with open(gsa_url_file, "a+") as f:
+                f.write(f"{url}\n")
+
+    logging.info(f"{False}")
     return False
 
 
