@@ -1046,7 +1046,7 @@ def export_add_gsa_by_url(input_xlsx_path, output_xlsx_path, valid_txt_path, row
     导出xlsx
     input_xlsx_path: 原文件
     output_xlsx_path: 输出文件
-    valid_txt_path: 需要保留的part_numbers
+    valid_txt_path: 需要保留的urls
     row_index: url所在列
     """
     urls = get_part_numbers(valid_txt_path)
