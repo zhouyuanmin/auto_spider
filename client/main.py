@@ -704,73 +704,25 @@ def refresh_gsa_good_by_url(url, browser):
     logging.info(f"刷新 gsa_good_by_url {url}")
 
     # 到详细页采集数据
-    browser.get(url)
-    time.sleep(10)
-    waiting_to_load(browser)
-
-    # 增加判断是否需要邮编,有则跳过
-    zip_div = browser.find_elements_by_xpath(page_elements.get("zip"))
-    if zip_div:
-        raise ValueError(f"页面未加载完成 有邮编 url={url}")
-
-    search_divs = browser.find_elements_by_xpath(page_elements.get("search"))
-    if not search_divs:  # 页面未加载完成
-        raise ValueError(f"页面未加载完成 url={url}")
-
-    mas_sin_divs = browser.find_elements_by_xpath(page_elements.get("mas_sin"))
-    if mas_sin_divs:
-        mas_sin = mas_sin_divs[0].text.strip()
-    else:
-        raise ValueError(f"mas_sin不存在 url={url}")
-
-    coo_divs = browser.find_elements_by_xpath(page_elements.get("coo_divs"))
-    if coo_divs:
-        coo = coo_divs[0].text.strip()
-    elif mas_sin:  # 当coo不存在 但mas_sin存在 则设置coo为空字符串
-        coo = ""
-    else:
-        raise ValueError(f"coo不存在 url={url}")
-
-    description_div = browser.find_element_by_xpath(
-        page_elements.get("all_description")
-    )
-    description = description_div.text
-    if len(description) > 2047:
-        description = description[0:2047]
-
-    gsa_advantage_price_divs = browser.find_elements_by_xpath(
-        page_elements.get("gsa_advantage_price")
-    )
-    gsa_advantage_price_divs = gsa_advantage_price_divs[1:]  # 去掉title
-    gsa_advantage_prices = [0, 0, 0]
-    for i, div in enumerate(gsa_advantage_price_divs):
-        if i >= 3:  # 0,1,2
-            break
-        gsa_advantage_prices[i] = text2dollar(div.text)
-    gsa_price_1, gsa_price_2, gsa_price_3 = gsa_advantage_prices
-
-    manufacturer_divs = browser.find_elements_by_xpath(page_elements.get("manufacturer_divs"))
-    if manufacturer_divs:
-        manufacturer = manufacturer_divs[0].text.strip()
-    else:
-        raise ValueError(f"manufacturer不存在 url={url}")
-
+    detail_row_data = get_gsa_detail_by_url(url, browser)
     # 刷新此url的所有objs
     objs = models.GSAGood.objects.filter(url=url)
     for obj in objs:
-        obj.mas_sin = mas_sin
-        obj.coo = coo
-        obj.description = description
-        obj.gsa_price_1 = gsa_price_1
-        obj.gsa_price_2 = gsa_price_2
-        obj.gsa_price_3 = gsa_price_3
-        obj.manufacturer = manufacturer
+        obj.mas_sin = detail_row_data[0]
+        obj.coo = detail_row_data[1]
+        obj.gsa_price_1 = detail_row_data[2]
+        obj.gsa_price_2 = detail_row_data[3]
+        obj.gsa_price_3 = detail_row_data[4]
+        obj.manufacturer = detail_row_data[5]
+        obj.description_1 = detail_row_data[6]
+        obj.description_2 = detail_row_data[7]
         obj.refresh_at = datetime.datetime.now()
         obj.save()
 
 
 def refresh_gsa_goods_by_urls(url_txt_path, effective_time_str, index=0) -> bool:
     """
+    通过url刷新gsa详情页字段
     url_txt_path: url文件
     effective_time_str: "2023-11-04 12:17:29"
     return: bool True表示所有数据都有效、False还有数据需要更新
@@ -783,20 +735,19 @@ def refresh_gsa_goods_by_urls(url_txt_path, effective_time_str, index=0) -> bool
     ).values_list("url", flat=True)
     urls = set(urls) - set(exist_urls)
     urls = list(urls)
-    if index:  # 默认 0 或者 1
-        urls.sort(reverse=True)
-    else:
-        urls.sort()
+    urls.sort()
 
     if not urls:
         logging.info(f"{True}")
         return True
+
     logging.info(len(urls))
 
     # 开始爬取urls
     browser = create_browser(index)
     for url in urls:
         try:
+            time.sleep(5)  # 降低速度 避免遇到限制
             refresh_gsa_good_by_url(url, browser)
         except Exception as e:
             logging.error(e)
