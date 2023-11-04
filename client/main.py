@@ -229,6 +229,19 @@ def text2source(text):
     return int(nums[0])
 
 
+def trim_gsa_description(text):
+    # 去掉开头的两行包括Description的
+    rows = text.split("\n")
+    index = 0
+    if "Description" in rows[0]:
+        index = 1
+    if "Description" in rows[1]:
+        index = 2
+    rows = rows[index:]
+    text = "\n".join(rows)
+    return text
+
+
 def login_synnex():
     global synnex_username
     global synnex_password
@@ -1016,7 +1029,7 @@ def export(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_i
                 gsa_obj.url,
                 gsa_obj.mas_sin,
                 gsa_obj.coo,
-                gsa_obj.description,
+                trim_gsa_description(gsa_obj.description),
                 gsa_obj.gsa_price_1,
                 gsa_obj.gsa_price_2,
                 gsa_obj.gsa_price_3,
@@ -1075,7 +1088,7 @@ def export_add_gsa_by_url(input_xlsx_path, output_xlsx_path, valid_txt_path, row
             gsa_obj.url,
             gsa_obj.mas_sin,
             gsa_obj.coo,
-            gsa_obj.description,
+            trim_gsa_description(gsa_obj.description),
             gsa_obj.gsa_price_1,
             gsa_obj.gsa_price_2,
             gsa_obj.gsa_price_3,
