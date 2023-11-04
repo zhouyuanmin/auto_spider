@@ -49,6 +49,7 @@ class GSAGood(BaseModel):
     gsa_price_1 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="GSA优势价格1")
     gsa_price_2 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="GSA优势价格2")
     gsa_price_3 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="GSA优势价格3")
+    manufacturer = models.CharField(max_length=255, default="", verbose_name="Manufacturer")  # 详情页的厂家名称
 
 
 class IngramGood(BaseModel):
