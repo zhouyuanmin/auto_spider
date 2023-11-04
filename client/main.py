@@ -723,7 +723,7 @@ def refresh_gsa_good_by_url(url, browser):
         gsa_advantage_prices[i] = text2dollar(div.text)
     gsa_price_1, gsa_price_2, gsa_price_3 = gsa_advantage_prices
 
-    manufacturer_divs = browser.find_elements_by_xpath(page_elements.get("mas_sin"))
+    manufacturer_divs = browser.find_elements_by_xpath(page_elements.get("manufacturer_divs"))
     if manufacturer_divs:
         manufacturer = manufacturer_divs[0].text.strip()
     else:
