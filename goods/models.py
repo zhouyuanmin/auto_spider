@@ -45,11 +45,13 @@ class GSAGood(BaseModel):
     # 详情页
     mas_sin = models.CharField(max_length=255, default="", verbose_name="MAS Schedule/SIN")  # 33411
     coo = models.CharField(max_length=255, default="", verbose_name="原产地")
-    description = models.CharField(max_length=2047, default="", verbose_name="产品描述")
+    description = models.CharField(max_length=2047, default="", verbose_name="产品描述")  # 丢弃不使用了
     gsa_price_1 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="GSA优势价格1")
     gsa_price_2 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="GSA优势价格2")
     gsa_price_3 = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="GSA优势价格3")
     manufacturer = models.CharField(max_length=255, default="", verbose_name="Manufacturer")  # 详情页的厂家名称
+    description_1 = models.CharField(max_length=2047, default="", verbose_name="Product Description")
+    description_2 = models.CharField(max_length=2047, default="", verbose_name="Description Provided by XXX")
 
 
 class IngramGood(BaseModel):
