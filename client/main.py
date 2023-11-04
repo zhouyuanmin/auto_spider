@@ -84,6 +84,8 @@ page_elements = {
     "mfr_part_no_gsa": './/div[@class="mfrPartNumber"]',
     "product_name": '//h4[@role="heading"]',
     "all_description": '//div[@class="product-details-accordion"]',
+    "description_1": '//*[@id="main"]//strong[contains(text(),"Product Description")]/following-sibling::p[1]',
+    "description_2": '//*[@id="main"]//strong[contains(text(),"Description Provided by")]/following-sibling::div[1]',
     "product_description": '//div[@heading="Product Description"]/div',
     "description_strong": '//div[@heading="Vendor Description"]/strong',
     "description": '//div[@heading="Vendor Description"]/div',
@@ -476,6 +478,72 @@ def refresh_synnex_goods(part_numbers) -> bool:
     return False
 
 
+def get_gsa_detail_by_url(url, browser):
+    """采集gsa详情页数据"""
+    browser.get(url)
+    time.sleep(5)
+    waiting_to_load(browser)
+
+    # 增加判断是否需要邮编,有则跳过
+    zip_div = browser.find_elements_by_xpath(page_elements.get("zip"))
+    if zip_div:
+        raise ValueError(f"页面未加载完成 有邮编 url={url}")
+
+    search_divs = browser.find_elements_by_xpath(page_elements.get("search"))
+    if not search_divs:  # 页面未加载完成
+        raise ValueError(f"页面未加载完成 url={url}")
+
+    mas_sin_divs = browser.find_elements_by_xpath(page_elements.get("mas_sin"))
+    if mas_sin_divs:
+        mas_sin = mas_sin_divs[0].text.strip()
+    else:
+        raise ValueError(f"mas_sin不存在 url={url}")
+
+    coo_divs = browser.find_elements_by_xpath(page_elements.get("coo_divs"))
+    if coo_divs:
+        coo = coo_divs[0].text.strip()
+    elif mas_sin:  # 当coo不存在 但mas_sin存在 则设置coo为空字符串
+        coo = ""
+    else:
+        raise ValueError(f"coo不存在 url={url}")
+
+    description_1_divs = browser.find_elements_by_xpath(page_elements.get("description_1"))
+    if description_1_divs:
+        description_1 = description_1_divs[0].text.strip()
+        if len(description_1) > 2047:
+            description_1 = description_1[0:2047]
+    else:
+        description_1 = ""
+
+    description_2_divs = browser.find_elements_by_xpath(page_elements.get("description_2"))
+    if description_2_divs:
+        description_2 = description_2_divs[0].text.strip()
+        if len(description_2) > 2047:
+            description_2 = description_1[0:2047]
+    else:
+        description_2 = ""
+
+    gsa_advantage_price_divs = browser.find_elements_by_xpath(
+        page_elements.get("gsa_advantage_price")
+    )
+    gsa_advantage_price_divs = gsa_advantage_price_divs[1:]  # 去掉title
+    gsa_advantage_prices = [0, 0, 0]
+
+    for i, div in enumerate(gsa_advantage_price_divs):
+        if i >= 3:  # 0,1,2
+            break
+        gsa_advantage_prices[i] = text2dollar(div.text)
+    gsa_price_1, gsa_price_2, gsa_price_3 = gsa_advantage_prices
+
+    manufacturer_divs = browser.find_elements_by_xpath(page_elements.get("manufacturer_divs"))
+    if manufacturer_divs:
+        manufacturer = manufacturer_divs[0].text.strip()
+    else:
+        raise ValueError(f"manufacturer不存在 url={url}")
+
+    detail_row_data = [mas_sin, coo, gsa_price_1, gsa_price_2, gsa_price_3, manufacturer, description_1, description_2]
+
+
 def refresh_gsa_good(part_number, browser):
     """
     刷新 gsa_good
@@ -552,65 +620,8 @@ def refresh_gsa_good(part_number, browser):
     gsa_data = []
     # 到详细页采集数据
     for (mfr_part_number, product_name, mfr, source, url) in valid_source_urls:
-        browser.get(url)
-        time.sleep(5)
-        waiting_to_load(browser)
-
-        # 增加判断是否需要邮编,有则跳过
-        zip_div = browser.find_elements_by_xpath(page_elements.get("zip"))
-        if zip_div:
-            continue
-
-        search_divs = browser.find_elements_by_xpath(page_elements.get("search"))
-        if not search_divs:  # 页面未加载完成
-            raise ValueError(f"页面未加载完成 part_number={part_number}")
-
-        mas_sin_divs = browser.find_elements_by_xpath(page_elements.get("mas_sin"))
-        if mas_sin_divs:
-            mas_sin = mas_sin_divs[0].text.strip()
-        else:
-            raise ValueError(f"mas_sin不存在 part_number={part_number}")
-
-        coo_divs = browser.find_elements_by_xpath(page_elements.get("coo_divs"))
-        if coo_divs:
-            coo = coo_divs[0].text.strip()
-        elif mas_sin:  # 当coo不存在 但mas_sin存在 则设置coo为空字符串
-            coo = ""
-        else:
-            raise ValueError(f"coo不存在 part_number={part_number}")
-
-        description_div = browser.find_element_by_xpath(
-            page_elements.get("all_description")
-        )
-        description = description_div.text
-        if len(description) > 2047:
-            description = description[0:2047]
-
-        gsa_advantage_price_divs = browser.find_elements_by_xpath(
-            page_elements.get("gsa_advantage_price")
-        )
-        gsa_advantage_price_divs = gsa_advantage_price_divs[1:]  # 去掉title
-        gsa_advantage_prices = [0, 0, 0]
-        for i, div in enumerate(gsa_advantage_price_divs):
-            if i >= 3:  # 0,1,2
-                break
-            gsa_advantage_prices[i] = text2dollar(div.text)
-        gsa_price_1, gsa_price_2, gsa_price_3 = gsa_advantage_prices
-
-        gsa_row = [
-            part_number,
-            mfr_part_number,
-            product_name,
-            mfr,
-            source,
-            url,
-            mas_sin,
-            coo,
-            description,
-            gsa_price_1,
-            gsa_price_2,
-            gsa_price_3,
-        ]
+        detail_row_data = get_gsa_detail_by_url(url, browser)
+        gsa_row = [part_number, mfr_part_number, product_name, mfr, source, url] + detail_row_data
         gsa_data.append(gsa_row)
 
     if gsa_data:
@@ -627,10 +638,12 @@ def refresh_gsa_good(part_number, browser):
                 url=gsa_row[5],
                 mas_sin=gsa_row[6],
                 coo=gsa_row[7],
-                description=gsa_row[8],
-                gsa_price_1=gsa_row[9],
-                gsa_price_2=gsa_row[10],
-                gsa_price_3=gsa_row[11],
+                gsa_price_1=gsa_row[8],
+                gsa_price_2=gsa_row[9],
+                gsa_price_3=gsa_row[10],
+                manufacturer=gsa_row[11],
+                description_1=gsa_row[12],
+                description_2=gsa_row[13],
             )
             gsa_objs.append(gsa_obj)
         models.GSAGood.objects.bulk_create(gsa_objs)
@@ -984,11 +997,12 @@ def export(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_i
         "url",
         "mas_sin",
         "coo",
-        "description",
         "gsa_price_1",
         "gsa_price_2",
         "gsa_price_3",
         "manufacturer",
+        "description_1",
+        "description_2",
     ]
     ingram_titles = ["vpn", "price"]
     row_title.extend(synnex_titles)
@@ -1029,11 +1043,12 @@ def export(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_i
                 gsa_obj.url,
                 gsa_obj.mas_sin,
                 gsa_obj.coo,
-                trim_gsa_description(gsa_obj.description),
                 gsa_obj.gsa_price_1,
                 gsa_obj.gsa_price_2,
                 gsa_obj.gsa_price_3,
                 gsa_obj.manufacturer,
+                gsa_obj.description_1,
+                gsa_obj.description_2,
             ]
             new_row = row + synnex_fields + gsa_fields + ingram_fields
             new_data.append(new_row)
