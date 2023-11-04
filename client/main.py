@@ -975,6 +975,7 @@ def export(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_i
         "gsa_price_1",
         "gsa_price_2",
         "gsa_price_3",
+        "manufacturer",
     ]
     ingram_titles = ["vpn", "price"]
     row_title.extend(synnex_titles)
@@ -984,7 +985,7 @@ def export(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_i
     new_data.append(row_title)
     for row in data[1:]:
         part_number = row[row_index]
-        if part_number in part_numbers:
+        if part_number in part_number_set:
             part_number_set.discard(part_number)
         else:
             continue
@@ -1019,9 +1020,69 @@ def export(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_i
                 gsa_obj.gsa_price_1,
                 gsa_obj.gsa_price_2,
                 gsa_obj.gsa_price_3,
+                gsa_obj.manufacturer,
             ]
             new_row = row + synnex_fields + gsa_fields + ingram_fields
             new_data.append(new_row)
+
+    save_data_to_excel(output_xlsx_path, new_data)
+
+
+def export_add_gsa_by_url(input_xlsx_path, output_xlsx_path, valid_txt_path, row_index, sheet_index=0, begin_row=0):
+    """
+    导出xlsx
+    input_xlsx_path: 原文件
+    output_xlsx_path: 输出文件
+    valid_txt_path: 需要保留的part_numbers
+    row_index: url所在列
+    """
+    urls = get_part_numbers(valid_txt_path)
+    urls_set = set(urls)
+
+    new_data = []
+    data = get_data_by_excel(input_xlsx_path, sheet_index, begin_row)
+    row_title = data[0]
+    gsa_titles = [
+        "mfr_part_number",
+        "product_name",
+        "mfr",
+        "source",
+        "url",
+        "mas_sin",
+        "coo",
+        "description",
+        "gsa_price_1",
+        "gsa_price_2",
+        "gsa_price_3",
+        "manufacturer",
+    ]
+    row_title.extend(gsa_titles)
+    new_data.append(row_title)
+
+    for row in data[1:]:
+        url = row[row_index]
+        # 在row的后面添加爬取的数据 并放入new_data
+        if url in urls_set:
+            urls_set.discard(url)
+        else:
+            continue
+        gsa_obj = models.GSAGood.objects.filter(url=url).first()
+        gsa_fields = [
+            gsa_obj.mfr_part_number,
+            gsa_obj.product_name,
+            gsa_obj.mfr,
+            gsa_obj.source,
+            gsa_obj.url,
+            gsa_obj.mas_sin,
+            gsa_obj.coo,
+            gsa_obj.description,
+            gsa_obj.gsa_price_1,
+            gsa_obj.gsa_price_2,
+            gsa_obj.gsa_price_3,
+            gsa_obj.manufacturer,
+        ]
+        new_row = row + gsa_fields
+        new_data.append(new_row)
 
     save_data_to_excel(output_xlsx_path, new_data)
 
