@@ -1029,11 +1029,12 @@ def export_add_gsa_by_url(input_xlsx_path, output_xlsx_path, valid_txt_path, row
         "url",
         "mas_sin",
         "coo",
-        "description",
         "gsa_price_1",
         "gsa_price_2",
         "gsa_price_3",
         "manufacturer",
+        "description_1",
+        "description_2",
     ]
     row_title.extend(gsa_titles)
     new_data.append(row_title)
@@ -1054,11 +1055,12 @@ def export_add_gsa_by_url(input_xlsx_path, output_xlsx_path, valid_txt_path, row
             gsa_obj.url,
             gsa_obj.mas_sin,
             gsa_obj.coo,
-            trim_gsa_description(gsa_obj.description),
             gsa_obj.gsa_price_1,
             gsa_obj.gsa_price_2,
             gsa_obj.gsa_price_3,
             gsa_obj.manufacturer,
+            gsa_obj.description_1,
+            gsa_obj.description_2,
         ]
         new_row = row + gsa_fields
         new_data.append(new_row)
