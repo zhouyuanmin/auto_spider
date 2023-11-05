@@ -96,6 +96,7 @@ page_elements = {
     "mas_sin": '//*[@id="main"]//strong[contains(text(),"MAS Schedule/SIN")]/../following-sibling::div[1]',
     "coo_divs": '//*[@id="main"]//strong[contains(text(),"Country of Origin")]/../following-sibling::div[1]',
     "manufacturer_divs": '//*[@id="main"]//strong[contains(text(),"Manufacturer")]/../following-sibling::div[1]',
+    "gsa_mfr_part_no": '//*[@id="main"]//strong[contains(text(),"Mfr Part No.")]/../following-sibling::div[1]',
     "vpn_divs": '//*[@id="main-view"]//span[contains(text(),"VPN:")]/following-sibling::span[1]',
     "no_results": '//*[@id="search-container"]//h1[contains(text(),"Sorry, no results found!")]',
     "own_price": '//*[@id="main-view"]//div[@class="ownPrice no-print css-lqai7o"]',
@@ -494,7 +495,9 @@ def get_gsa_detail_by_url(url, browser):
     else:
         raise ValueError(f"coo不存在 url={url}")
 
-    description_1_divs = browser.find_elements_by_xpath(page_elements.get("description_1"))
+    description_1_divs = browser.find_elements_by_xpath(
+        page_elements.get("description_1")
+    )
     if description_1_divs:
         description_1 = description_1_divs[0].text.strip()
         if len(description_1) > 2047:
@@ -502,7 +505,9 @@ def get_gsa_detail_by_url(url, browser):
     else:
         description_1 = ""
 
-    description_2_divs = browser.find_elements_by_xpath(page_elements.get("description_2"))
+    description_2_divs = browser.find_elements_by_xpath(
+        page_elements.get("description_2")
+    )
     if description_2_divs:
         description_2 = description_2_divs[0].text.strip()
         if len(description_2) > 2047:
@@ -522,13 +527,33 @@ def get_gsa_detail_by_url(url, browser):
         gsa_advantage_prices[i] = text2dollar(div.text)
     gsa_price_1, gsa_price_2, gsa_price_3 = gsa_advantage_prices
 
-    manufacturer_divs = browser.find_elements_by_xpath(page_elements.get("manufacturer_divs"))
+    manufacturer_divs = browser.find_elements_by_xpath(
+        page_elements.get("manufacturer_divs")
+    )
     if manufacturer_divs:
         manufacturer = manufacturer_divs[0].text.strip()
     else:
         raise ValueError(f"manufacturer不存在 url={url}")
 
-    detail_row_data = [mas_sin, coo, gsa_price_1, gsa_price_2, gsa_price_3, manufacturer, description_1, description_2]
+    mfr_part_no_divs = browser.find_elements_by_xpath(
+        page_elements.get("gsa_mfr_part_no")
+    )
+    if mfr_part_no_divs:
+        mfr_part_no = mfr_part_no_divs[0].text.strip()
+    else:
+        raise ValueError(f"mfr_part_no不存在 url={url}")
+
+    detail_row_data = [
+        mas_sin,
+        coo,
+        gsa_price_1,
+        gsa_price_2,
+        gsa_price_3,
+        manufacturer,
+        description_1,
+        description_2,
+        mfr_part_no,
+    ]
 
 
 def refresh_gsa_good(part_number, browser):
@@ -608,7 +633,8 @@ def refresh_gsa_good(part_number, browser):
     # 到详细页采集数据
     for (mfr_part_number, product_name, mfr, source, url) in valid_source_urls:
         detail_row_data = get_gsa_detail_by_url(url, browser)
-        gsa_row = [part_number, mfr_part_number, product_name, mfr, source, url] + detail_row_data
+        list_row_data = [part_number, mfr_part_number, product_name, mfr, source, url]
+        gsa_row = list_row_data + detail_row_data
         gsa_data.append(gsa_row)
 
     if gsa_data:
@@ -631,6 +657,7 @@ def refresh_gsa_good(part_number, browser):
                 manufacturer=gsa_row[11],
                 description_1=gsa_row[12],
                 description_2=gsa_row[13],
+                mfr_part_no=gsa_row[14],
             )
             gsa_objs.append(gsa_obj)
         models.GSAGood.objects.bulk_create(gsa_objs)
@@ -703,6 +730,7 @@ def refresh_gsa_good_by_url(url, browser):
         obj.manufacturer = detail_row_data[5]
         obj.description_1 = detail_row_data[6]
         obj.description_2 = detail_row_data[7]
+        obj.mfr_part_no = detail_row_data[8]
         obj.refresh_at = datetime.datetime.now()
         obj.save()
 
